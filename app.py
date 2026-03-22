@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
+from flask_login import current_user
 import boto3
 
 # ================= CONFIG =================
@@ -147,7 +148,8 @@ def delete():
 @app.route("/logout")
 @login_required
 def logout():
-    logout_user()
+    logout_user()       # logs out flask-login
+    session.clear()     # clears session data (IMPORTANT)
     return redirect("/")
 
 # ---------- ERROR HANDLER ----------
