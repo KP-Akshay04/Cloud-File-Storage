@@ -160,6 +160,19 @@ def logout():
     logout_user()   # 🔥 this is enough
     return redirect("/")
 
+@app.route("/files")
+@login_required
+def all_files():
+    return redirect("/dashboard")  # for now reuse dashboard
+
+@app.route("/profile")
+@login_required
+def profile():
+    return {
+        "username": current_user.username,
+        "id": current_user.id
+    }
+
 # ---------- ERROR HANDLER ----------
 @app.errorhandler(413)
 def too_large(e):
