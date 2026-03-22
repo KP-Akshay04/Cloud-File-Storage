@@ -1,9 +1,8 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
-from flask_login import current_user
 import boto3
 
 # ================= CONFIG =================
@@ -19,6 +18,7 @@ bcrypt = Bcrypt(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+login_manager.login_view = "home"   # 🔥 redirect if not logged in
 
 # ================= S3 =================
 
@@ -36,7 +36,7 @@ def allowed_file(filename):
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100))
+    username = db.Column(db.String(100), unique=True)  # 🔥 prevent duplicates
     password = db.Column(db.String(200))
 
 @login_manager.user_loader
@@ -54,9 +54,16 @@ def home():
 def signup():
     if request.method == "POST":
         username = request.form["username"]
-        password = bcrypt.generate_password_hash(request.form["password"]).decode('utf-8')
+        password = request.form["password"]
 
-        user = User(username=username, password=password)
+        # 🔥 check if user already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            return "User already exists"
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+        user = User(username=username, password=hashed_password)
         db.session.add(user)
         db.session.commit()
 
@@ -78,13 +85,12 @@ def login():
 
     return "Invalid credentials"
 
-# ---------- DASHBOARD (FIXED + SEARCH) ----------
+# ---------- DASHBOARD ----------
 @app.route("/dashboard")
 @login_required
 def dashboard():
     files = []
 
-    # ✅ Get search query
     search_query = request.args.get('search', '').lower()
 
     response = s3.list_objects_v2(
@@ -96,20 +102,17 @@ def dashboard():
         for obj in response['Contents']:
             key = obj['Key']
 
-            # Skip folder
             if key.endswith('/'):
                 continue
 
             filename = key.split('/')[-1]
 
-            # Generate secure URL
             url = s3.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': bucket_name, 'Key': key},
                 ExpiresIn=3600
             )
 
-            # Apply search
             if search_query in filename.lower():
                 files.append({
                     "url": url,
@@ -123,7 +126,10 @@ def dashboard():
 @app.route("/upload", methods=["POST"])
 @login_required
 def upload():
-    file = request.files['file']
+    file = request.files.get('file')
+
+    if not file or file.filename == "":
+        return "No file selected"
 
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
@@ -140,16 +146,18 @@ def upload():
 @app.route('/delete', methods=['POST'])
 @login_required
 def delete():
-    key = request.form['key']
-    s3.delete_object(Bucket=bucket_name, Key=key)
+    key = request.form.get('key')
+
+    if key:
+        s3.delete_object(Bucket=bucket_name, Key=key)
+
     return redirect('/dashboard')
 
-# ---------- LOGOUT ----------
+# ---------- LOGOUT (FIXED) ----------
 @app.route("/logout")
 @login_required
 def logout():
-    logout_user()       # logs out flask-login
-    session.clear()     # clears session data (IMPORTANT)
+    logout_user()   # 🔥 this is enough
     return redirect("/")
 
 # ---------- ERROR HANDLER ----------
@@ -163,5 +171,4 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
-app.run(host="0.0.0.0", port=8000)
-
+    app.run(host="0.0.0.0", port=8000)
