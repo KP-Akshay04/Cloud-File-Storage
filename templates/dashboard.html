@@ -4,120 +4,116 @@
 <meta charset="UTF-8">
 <title>Dashboard | MyCloud</title>
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- ✅ MODAL CSS ADDED -->
+<style>
+.preview-modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+}
+
+.preview-content {
+  position: relative;
+  margin: 3% auto;
+  width: 85%;
+  height: 85%;
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.close-btn {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  font-size: 30px;
+  cursor: pointer;
+  color: white;
+}
+
+#previewBody {
+  width: 100%;
+  height: 100%;
+}
+</style>
+
 </head>
 
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white min-h-screen flex">
 
-<!-- 🔹 Sidebar -->
+<!-- Sidebar -->
 <div id="sidebar"
-class="w-64 fixed h-full bg-white/5 backdrop-blur-xl border-r border-white/10 p-6
-transform transition-transform duration-300 ease-in-out z-50">
+class="w-64 fixed h-full bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 transition-transform">
 
     <h2 class="text-2xl font-bold mb-10">☁ MyCloud</h2>
 
     <ul class="space-y-4">
-
-        <li>
-            <a href="/dashboard"
-               class="block px-4 py-2 rounded-xl hover:bg-white/10
-               {% if active == 'dashboard' %}bg-blue-500/20 text-blue-400 font-semibold{% endif %}">
-               🏠 Dashboard
-            </a>
-        </li>
-
-        <li>
-            <a href="/files"
-               class="block px-4 py-2 rounded-xl hover:bg-white/10
-               {% if active == 'files' %}bg-blue-500/20 text-blue-400 font-semibold{% endif %}">
-               📁 My Files
-            </a>
-        </li>
-
-        <li>
-            <a href="/recent"
-               class="block px-4 py-2 rounded-xl hover:bg-white/10
-               {% if active == 'recent' %}bg-blue-500/20 text-blue-400 font-semibold{% endif %}">
-               🕒 Recent
-            </a>
-        </li>
-
-        <li>
-            <a href="/trash"
-               class="block px-4 py-2 rounded-xl hover:bg-white/10
-               {% if active == 'trash' %}bg-blue-500/20 text-blue-400 font-semibold{% endif %}">
-               🗑 Trash
-            </a>
-        </li>
-
+        <li><a href="/dashboard" class="block px-4 py-2 rounded-xl hover:bg-white/10">🏠 Dashboard</a></li>
+        <li><a href="/files" class="block px-4 py-2 rounded-xl hover:bg-white/10">📁 My Files</a></li>
+        <li><a href="/recent" class="block px-4 py-2 rounded-xl hover:bg-white/10">🕒 Recent</a></li>
+        <li><a href="/trash" class="block px-4 py-2 rounded-xl hover:bg-white/10">🗑 Trash</a></li>
     </ul>
 
-    <!-- ✅ STORAGE (ONLY ONE, CONNECTED TO BACKEND) -->
     <div class="mt-10">
-       <p class="text-xs mt-2 text-gray-400">
-    {{ used_mb }} MB used
-</p>
+       <p class="text-xs mt-2 text-gray-400">{{ used_mb }} MB used</p>
        <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
            <div class="bg-blue-500 h-2 rounded-full" style="width: {{ usage_percent }}%;"></div>
        </div>
     </div>
-
 </div>
 
-<!-- 🔹 Main -->
+<!-- Main -->
 <div class="flex-1 p-8 ml-64">
 
-    <!-- 🔝 Topbar -->
     <div class="flex justify-between items-center mb-8">
-
-        <!-- Toggle -->
         <button onclick="toggleSidebar()" class="text-2xl">☰</button>
 
-        <!-- Search -->
         <form method="GET" action="/dashboard" class="w-1/3">
             <input type="text" name="search"
                 value="{{ request.args.get('search', '') }}"
                 placeholder="Search files..."
-                class="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/10 focus:ring-2 focus:ring-blue-400 outline-none">
+                class="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/10">
         </form>
 
-        <!-- ✅ ONLY LOGOUT -->
-        <a href="/logout" class="bg-white/10 px-4 py-2 rounded-xl hover:bg-white/20">
-            Logout
-        </a>
-
+        <a href="/logout" class="bg-white/10 px-4 py-2 rounded-xl hover:bg-white/20">Logout</a>
     </div>
 
-    <!-- 📤 Upload -->
-    <div id="upload" class="mb-10">
+    <!-- Upload -->
+    <div class="mb-10">
         <form action="/upload" method="POST" enctype="multipart/form-data"
-            class="border-2 border-dashed border-white/20 p-10 rounded-2xl text-center bg-white/5 hover:border-blue-400 transition">
+            class="border-2 border-dashed border-white/20 p-10 rounded-2xl text-center bg-white/5">
 
             <p class="text-gray-400 mb-4">Drag & drop files or click to upload</p>
 
-            <input type="file" name="file"
-                class="mb-4 text-sm bg-gray-800 p-2 rounded">
+            <input type="file" name="file" class="mb-4 text-sm bg-gray-800 p-2 rounded">
 
             <br>
 
-            <button class="bg-blue-500 px-6 py-2 rounded-xl hover:bg-blue-600 transition">
+            <button class="bg-blue-500 px-6 py-2 rounded-xl hover:bg-blue-600">
                 Upload
             </button>
         </form>
     </div>
 
-    <!-- 📁 Files -->
     <h2 class="text-2xl font-semibold mb-6">Your Files</h2>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
         {% if files|length == 0 %}
-        <p class="text-gray-400 col-span-3 text-center">
-            No files uploaded yet 🚀
-        </p>
+        <p class="text-gray-400 col-span-3 text-center">No files uploaded yet 🚀</p>
         {% endif %}
 
         {% for file in files %}
-        <div class="p-5 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 hover:scale-105 hover:shadow-xl transition duration-300">
+        <!-- ✅ CLICKABLE CARD -->
+        <div onclick="openPreview('{{ file.key }}')"
+        class="p-5 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 hover:scale-105 transition cursor-pointer">
 
             <div class="flex items-center gap-3 mb-3">
                 <span class="text-3xl">📄</span>
@@ -130,15 +126,15 @@ transform transition-transform duration-300 ease-in-out z-50">
 
             <div class="flex justify-between items-center">
 
-                <!-- ✅ FIXED VIEW BUTTON -->
-                <a href="{{ file.url }}" target="_blank"
-                   class="text-blue-400 hover:underline">
-                   View
-                </a>
+                <!-- ✅ FIXED BUTTON -->
+                <button onclick="event.stopPropagation(); openPreview('{{ file.key }}')"
+                    class="text-blue-400 hover:underline">
+                    Preview
+                </button>
 
                 <form action="/delete" method="POST">
                     <input type="hidden" name="key" value="{{ file.key }}">
-                    <button class="text-red-400 hover:text-red-600"
+                    <button class="text-red-400"
                         onclick="return confirm('Delete this file?')">
                         Delete
                     </button>
@@ -153,8 +149,60 @@ transform transition-transform duration-300 ease-in-out z-50">
 
 </div>
 
+<!-- ✅ PREVIEW MODAL -->
+<div id="previewModal" class="preview-modal">
+  <div class="preview-content">
+    <span class="close-btn" onclick="closePreview()">×</span>
+    <div id="previewBody"></div>
+  </div>
+</div>
+
 <!-- JS -->
 <script>
+function openPreview(fileKey) {
+    const body = document.getElementById("previewBody");
+    const modal = document.getElementById("previewModal");
+
+    body.innerHTML = `<p style="color:white;">Loading preview...</p>`;
+
+    fetch(`/preview/${encodeURIComponent(fileKey)}`)
+    .then(res => res.json())
+    .then(data => {
+        body.innerHTML = "";
+
+        const ext = data.type;
+        const url = data.url;
+
+        if (["jpg","jpeg","png","webp"].includes(ext)) {
+            body.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:contain;">`;
+        }
+        else if (ext === "pdf") {
+            body.innerHTML = `<iframe src="${url}" width="100%" height="100%"></iframe>`;
+        }
+        else if (["txt","json","log"].includes(ext)) {
+            fetch(url)
+            .then(res => res.text())
+            .then(text => {
+                body.innerHTML = `<pre style="color:white;">${text}</pre>`;
+            });
+        }
+        else {
+            body.innerHTML = `<p style="color:white;">Preview not supported</p>`;
+        }
+
+        modal.style.display = "block";
+    });
+}
+
+function closePreview() {
+    document.getElementById("previewModal").style.display = "none";
+}
+
+window.onclick = function(e) {
+    const modal = document.getElementById("previewModal");
+    if (e.target === modal) modal.style.display = "none";
+}
+
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("-translate-x-full");
 }

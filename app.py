@@ -6,6 +6,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 import boto3
+from flask import jsonify
 
 # ================= CONFIG =================
 
@@ -168,6 +169,27 @@ def delete():
     s3.delete_object(Bucket=bucket_name, Key=key)
 
     return redirect("/dashboard")
+
+@app.route('/preview/<path:file_key>')
+@login_required
+def preview_file(file_key):
+    try:
+        url = s3.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': 'YOUR_BUCKET_NAME',
+                'Key': file_key
+            },
+            ExpiresIn=300
+        )
+
+        return jsonify({
+            "url": url,
+            "type": file_key.split('.')[-1].lower()
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ---------- FILES (REUSE DASHBOARD) ----------
 @app.route("/files")

@@ -1,0 +1,35 @@
+.preview-modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(10px);
+}
+
+.preview-content {
+  position: relative;
+  margin: 5% auto;
+  width: 80%;
+  height: 80%;
+  background: rgba(255,255,255,0.08);
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.close-btn {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  font-size: 28px;
+  cursor: pointer;
+  color: white;
+}
+
+#previewBody {
+  width: 100%;
+  height: 100%;
+}
