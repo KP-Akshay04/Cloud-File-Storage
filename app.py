@@ -1,3 +1,5 @@
+from importlib.resources import files
+
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -104,28 +106,24 @@ def dashboard():
 
     files = []
 
+    total_size = 0
+
     if 'Contents' in response:
         for obj in response['Contents']:
-            key = obj['Key']
+            total_size += obj['Size']
 
-            # skip folders if any
-            if key.endswith("/"):
-                continue
+    used_mb = round(total_size / (1024 * 1024), 2)
 
-            files.append({
-                "name": key.split("/")[-1],
-                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
-                "key": key
-            })
+    # assume max 1GB
+    usage_percent = int((used_mb / 1024) * 100) if used_mb else 1
 
     return render_template(
         "dashboard.html",
         files=files,
         active="dashboard",
-        used_mb=0,
-        usage_percent=10
+        used_mb=used_mb,    
+        usage_percent=usage_percent
     )
-
 # ---------- UPLOAD ----------
 @app.route("/upload", methods=["POST"])
 @login_required
@@ -155,15 +153,21 @@ def upload():
     return "Invalid file type"
 
 # ---------- DELETE ----------
-@app.route('/delete', methods=['POST'])
+@app.route("/delete", methods=["POST"])
 @login_required
 def delete():
-    key = request.form.get('key')
+    key = request.form.get("key")
 
-    if key:
-        s3.delete_object(Bucket=bucket_name, Key=key)
+    # move to trash instead of deleting
+    s3.copy_object(
+        Bucket=bucket_name,
+        CopySource={'Bucket': bucket_name, 'Key': key},
+        Key=f"trash/{key}"
+    )
 
-    return redirect('/dashboard')
+    s3.delete_object(Bucket=bucket_name, Key=key)
+
+    return redirect("/dashboard")
 
 # ---------- FILES (REUSE DASHBOARD) ----------
 @app.route("/files")
@@ -192,13 +196,50 @@ def files():
 @app.route("/recent")
 @login_required
 def recent():
-    return render_template("files.html", files=[], active="recent")
+    response = s3.list_objects_v2(Bucket=bucket_name)
+
+    files = []
+
+    if 'Contents' in response:
+        # sort by latest
+        sorted_files = sorted(response['Contents'], key=lambda x: x['LastModified'], reverse=True)
+
+        for obj in sorted_files[:5]:  # last 5 files
+            key = obj['Key']
+
+            if key.endswith("/"):
+                continue
+
+            files.append({
+                "name": key.split("/")[-1],
+                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
+                "key": key
+            })
+
+    return render_template("files.html", files=files, active="recent")
 
 # ---------- TRASH (REUSE DASHBOARD) ----------
 @app.route("/trash")
 @login_required
 def trash():
-    return render_template("files.html", files=[], active="trash")
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix="trash/")
+
+    files = []
+
+    if 'Contents' in response:
+        for obj in response['Contents']:
+            key = obj['Key']
+
+            if key.endswith("/"):
+                continue
+
+            files.append({
+                "name": key.split("/")[-1],
+                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
+                "key": key
+            })
+
+    return render_template("files.html", files=files, active="trash")
 
 # ---------- LOGOUT (FIXED) ----------
 @app.route("/logout")
