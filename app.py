@@ -136,7 +136,15 @@ def upload():
 
         s3_key = f"user_uploads/{current_user.id}/{filename}"
 
-        s3.upload_fileobj(file, bucket_name, s3_key)
+        s3.upload_fileobj(
+    file,
+    bucket_name,
+    file.filename,
+    ExtraArgs={
+        "ContentType": file.content_type,
+        "ContentDisposition": "inline"
+    }
+)
 
         return redirect("/dashboard")
 

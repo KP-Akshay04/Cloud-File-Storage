@@ -1,148 +1,147 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-
+<meta charset="UTF-8">
+<title>Dashboard | MyCloud</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
-<title>CloudDrive Dashboard</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
 </head>
 
-<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen">
+<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white min-h-screen flex">
 
-<div class="flex">
+<!-- 🔹 Sidebar -->
+<div id="sidebar" class="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between">
 
-    <!-- 🔹 Sidebar -->
-    <div class="w-64 h-screen p-5 bg-white/5 backdrop-blur-lg border-r border-white/10">
-
-        <h2 class="text-2xl font-bold mb-8">☁ MyCloud</h2>
+    <div>
+        <h2 class="text-2xl font-bold mb-10">☁ MyCloud</h2>
 
         <ul class="space-y-4">
-    <li>
-        <a href="/dashboard" class="text-blue-400 font-semibold">Dashboard</a>
-    </li>
-    <li>
-        <a href="/files" class="hover:text-blue-400">All Files</a>
-    </li>
-    <li>
-        <a href="/dashboard#upload" class="hover:text-blue-400">Upload</a>
-    </li>
-    <li>
-        <a href="/logout" class="hover:text-red-400">Logout</a>
-    </li>
-</ul>
-
+            <li>
+                <a href="/dashboard" class="block px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 font-semibold">
+                    Dashboard
+                </a>
+            </li>
+            <li>
+                <a href="/files" class="block px-4 py-2 rounded-xl hover:bg-white/10 transition">
+                    Files
+                </a>
+            </li>
+            <li>
+                <a href="#upload" class="block px-4 py-2 rounded-xl hover:bg-white/10 transition">
+                    Upload
+                </a>
+            </li>
+        </ul>
     </div>
 
-    <!-- 🔹 Main Content -->
-    <div class="flex-1 p-10">
-
-        <!-- 🔍 Top Bar -->
-        <div class="flex justify-between items-center mb-8">
-
-            <!-- ✅ SEARCH FORM ADDED -->
-            <form method="GET" action="/dashboard" class="w-1/3">
-                <form method="GET" action="/dashboard">
-    <input type="text" name="search" placeholder="Search files..."
-        class="w-1/3 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 focus:outline-none">
-                    <input type="text" name="search"
-    value="{{ request.args.get('search', '') }}"
-    placeholder="Search files..."
-    class="...">
-            </form>
-
-            <div class="relative">
-    <button onclick="toggleMenu()" 
-        class="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
-        👤 {{ current_user.username }}
-    </button>
-
-    <div id="menu" class="hidden absolute right-0 mt-2 bg-gray-800 rounded-lg shadow-lg">
-        <a href="/profile" class="block px-4 py-2 hover:bg-gray-700">Profile</a>
-        <a href="/logout" class="block px-4 py-2 hover:bg-gray-700 text-red-400">Logout</a>
-    </div>
+    <a href="/logout" class="text-red-400 hover:text-red-500">Logout</a>
 </div>
 
-<script>
-function toggleMenu() {
-    document.getElementById("menu").classList.toggle("hidden");
-}
-</script>
+<!-- 🔹 Main -->
+<div class="flex-1 p-8">
 
+    <!-- 🔝 Topbar -->
+    <div class="flex justify-between items-center mb-8">
+
+        <!-- Toggle -->
+        <button onclick="toggleSidebar()" class="text-2xl">☰</button>
+
+        <!-- Search -->
+        <form method="GET" action="/dashboard" class="w-1/3">
+            <input type="text" name="search"
+                value="{{ request.args.get('search', '') }}"
+                placeholder="Search files..."
+                class="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/10 focus:ring-2 focus:ring-blue-400 outline-none">
+        </form>
+
+        <!-- User -->
+        <div class="relative">
+            <button onclick="toggleMenu()" class="bg-white/10 px-4 py-2 rounded-xl">
+                👤 {{ current_user.username }}
+            </button>
+
+            <div id="menu" class="hidden absolute right-0 mt-2 bg-gray-800 rounded-lg shadow-lg w-40">
+                <a href="/profile" class="block px-4 py-2 hover:bg-gray-700">Profile</a>
+                <a href="/logout" class="block px-4 py-2 hover:bg-gray-700 text-red-400">Logout</a>
+            </div>
         </div>
 
-        <!-- 📤 Upload Box -->
-        <form action="/upload" method="POST" enctype="multipart/form-data"
-              class="border-2 border-dashed border-white/20 p-10 text-center rounded-2xl bg-white/5 backdrop-blur-md hover:border-blue-400 transition">
+    </div>
 
-            <p class="mb-4 text-gray-300">Drag & Drop or Select File</p>
+    <!-- 📤 Upload Section -->
+    <div id="upload" class="mb-10">
+        <form action="/upload" method="POST" enctype="multipart/form-data"
+            class="border-2 border-dashed border-white/20 p-10 rounded-2xl text-center bg-white/5 hover:border-blue-400 transition">
+
+            <p class="text-gray-400 mb-4">Drag & drop files or click to upload</p>
 
             <input type="file" name="file"
-                   class="mb-4 bg-gray-700 p-2 rounded text-white">
+                class="mb-4 text-sm bg-gray-800 p-2 rounded">
 
             <br>
 
             <button class="bg-blue-500 px-6 py-2 rounded-xl hover:bg-blue-600 transition">
                 Upload
             </button>
-
         </form>
+    </div>
 
-        <!-- 📁 Files Section -->
-        <h2 class="text-2xl font-semibold mt-10 mb-6">Your Files</h2>
+    <!-- 📁 Files -->
+    <h2 class="text-2xl font-semibold mb-6">Your Files</h2>
 
-        <div class="grid grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-    {% if files|length == 0 %}
+        {% if files|length == 0 %}
         <p class="text-gray-400 col-span-3 text-center">
             No files uploaded yet 🚀
         </p>
-    {% endif %}
+        {% endif %}
 
-    {% for file in files %}
-            <div class="p-5 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 hover:scale-105 hover:shadow-lg transition">
+        {% for file in files %}
+        <div class="p-5 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 hover:scale-105 hover:shadow-xl transition duration-300">
 
-                <!-- File Name -->
-                <div class="flex items-center gap-3 mb-3">
-    <span class="text-2xl">📄</span>
-    <p class="font-semibold truncate">{{ file.name }}</p>
-</div>
+            <div class="flex items-center gap-3 mb-3">
+                <span class="text-3xl">📄</span>
+                <p class="font-semibold truncate">{{ file.name }}</p>
+            </div>
 
-<div class="flex justify-between text-sm text-gray-400">
-    <span>Size: --</span>
-    <span>Type: {{ file.name.split('.')[-1] }}</span>
-</div>
+            <p class="text-sm text-gray-400 mb-4">
+                Type: {{ file.name.split('.')[-1] }}
+            </p>
 
-                <!-- Actions -->
-                <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center">
 
-                    <a href="{{ file.url }}" target="_blank"
-                       class="text-blue-400 hover:underline">
-                        View
-                    </a>
+                <a href="{{ file.url }}" target="_blank">
+                   class="text-blue-400 hover:underline">
+                   View
+                </a>
 
-                    <form action="/delete" method="POST">
-                        <input type="hidden" name="key" value="{{ file.key }}">
-                        <button class="text-red-400 hover:text-red-600"
-                                onclick="return confirm('Delete this file?')">
-                            Delete
-                        </button>
-                    </form>
-
-                </div>
+                <form action="/delete" method="POST">
+                    <input type="hidden" name="key" value="{{ file.key }}">
+                    <button class="text-red-400 hover:text-red-600"
+                        onclick="return confirm('Delete this file?')">
+                        Delete
+                    </button>
+                </form>
 
             </div>
-            {% endfor %}
 
         </div>
+        {% endfor %}
 
     </div>
 
 </div>
 
-</body>
+<!-- JS -->
+<script>
+function toggleMenu() {
+    document.getElementById("menu").classList.toggle("hidden");
+}
 
+function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("hidden");
+}
+</script>
+
+</body>
 </html>
