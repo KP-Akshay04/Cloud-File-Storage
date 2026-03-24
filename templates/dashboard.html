@@ -71,20 +71,24 @@ class="w-64 fixed h-full bg-white/5 backdrop-blur-xl border-r border-white/10 p-
         {% endif %}
 
         {% for file in files %}
-        <!-- ✅ CLICKABLE CARD -->
-        <div onclick="openPreview('{{ file.key }}')"
-        class="p-5 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 hover:scale-105 transition cursor-pointer">
+<div class="p-5 rounded-2xl bg-white/5">
 
-            <div class="flex items-center gap-3 mb-3">
-                <span class="text-3xl">📄</span>
-                <p class="font-semibold truncate">{{ file.name }}</p>
-            </div>
+    <p>{{ file.name }}</p>
+    <p>Type: {{ file.name.split('.')[-1] }}</p>
 
-            <p class="text-sm text-gray-400 mb-4">
-                Type: {{ file.name.split('.')[-1] }}
-            </p>
+    <!-- ✅ PASTE HERE -->
+    <button onclick="event.stopPropagation(); openPreview('{{ file.key }}')"
+            class="text-blue-400 hover:underline">
+        Preview
+    </button>
 
-            <div class="flex justify-between items-center">
+    <form action="/delete" method="POST">
+        <input type="hidden" name="key" value="{{ file.key }}">
+        <button class="text-red-400">Delete</button>
+    </form>
+
+</div>
+{% endfor %}
 
                 <!-- ✅ FIXED BUTTON -->
                 <button onclick="event.stopPropagation(); openPreview('{{ file.key }}')"
@@ -114,6 +118,28 @@ class="w-64 fixed h-full bg-white/5 backdrop-blur-xl border-r border-white/10 p-
 <script>
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("-translate-x-full");
+}
+</script>
+<script>
+function openPreview(fileKey) {
+    fetch(`/preview/${encodeURIComponent(fileKey)}`)
+    .then(res => res.json())
+    .then(data => {
+        const body = document.getElementById("previewBody");
+
+        const ext = data.type;
+        const url = data.url;
+
+        if (["jpg","jpeg","png","webp"].includes(ext)) {
+            body.innerHTML = `<img src="${url}" class="w-full h-full object-contain">`;
+        } else if (ext === "pdf") {
+            body.innerHTML = `<iframe src="${url}" class="w-full h-full"></iframe>`;
+        } else {
+            body.innerHTML = `<p>Preview not supported</p>`;
+        }
+
+        document.getElementById("previewModal").classList.remove("hidden");
+    });
 }
 </script>
 
