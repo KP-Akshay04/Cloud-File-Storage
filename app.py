@@ -104,23 +104,26 @@ def dashboard():
 
     files = []
 
-    total_size = 0
-
     if 'Contents' in response:
         for obj in response['Contents']:
-            total_size += obj['Size']
+            key = obj['Key']
 
-    used_mb = round(total_size / (1024 * 1024), 2)
+            # skip folders if any
+            if key.endswith("/"):
+                continue
 
-    # assume max = 1GB (1024 MB)
-    usage_percent = int((used_mb / 1024) * 100) if used_mb else 10
+            files.append({
+                "name": key.split("/")[-1],
+                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
+                "key": key
+            })
 
     return render_template(
         "dashboard.html",
         files=files,
         active="dashboard",
-        used_mb=used_mb,
-        usage_percent=usage_percent
+        used_mb=0,
+        usage_percent=10
     )
 
 # ---------- UPLOAD ----------
@@ -169,11 +172,16 @@ def files():
     response = s3.list_objects_v2(Bucket=bucket_name)
 
     files = []
+
     if 'Contents' in response:
         for obj in response['Contents']:
             key = obj['Key']
+
+            if key.endswith("/"):
+                continue
+
             files.append({
-                "name": key,
+                "name": key.split("/")[-1],
                 "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
                 "key": key
             })

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Files | MyCloud</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white min-h-screen flex">
+
+<!-- Sidebar -->
+<div class="w-64 fixed h-full bg-white/5 backdrop-blur-xl p-6">
+    <h2 class="text-2xl font-bold mb-10">☁ MyCloud</h2>
+
+    <ul class="space-y-4">
+        <li><a href="/dashboard">🏠 Dashboard</a></li>
+        <li><a href="/files" class="text-blue-400">📁 My Files</a></li>
+        <li><a href="/recent">🕒 Recent</a></li>
+        <li><a href="/trash">🗑 Trash</a></li>
+    </ul>
+</div>
+
+<!-- Main -->
+<div class="flex-1 p-8 ml-64">
+
+    <h2 class="text-2xl mb-6">My Files</h2>
+
+    <div class="grid grid-cols-3 gap-6">
+
+        {% if files|length == 0 %}
+        <p class="text-gray-400">No files found</p>
+        {% endif %}
+
+        {% for file in files %}
+        <div class="p-5 bg-white/5 rounded-xl">
+
+            <p class="truncate">{{ file.name }}</p>
+
+            <div class="flex justify-between mt-3">
+
+                <a href="{{ file.url }}" target="_blank"
+                   class="text-blue-400 hover:underline">
+                   View
+                </a>
+
+                <form action="/delete" method="POST">
+                    <input type="hidden" name="key" value="{{ file.key }}">
+                    <button class="text-red-400">Delete</button>
+                </form>
+
+            </div>
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
