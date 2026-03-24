@@ -1,12 +1,9 @@
-from importlib.resources import files
-
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 import boto3
-from flask import jsonify
 
 # ================= CONFIG =================
 
@@ -21,7 +18,7 @@ bcrypt = Bcrypt(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "home"   # 🔥 redirect if not logged in
+login_manager.login_view = "login"
 
 # ================= S3 =================
 
@@ -39,7 +36,7 @@ def allowed_file(filename):
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True)  # 🔥 prevent duplicates
+    username = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(200))
 
 @login_manager.user_loader
@@ -50,7 +47,7 @@ def load_user(user_id):
 
 @app.route("/")
 def home():
-    return render_template("login.html")
+    return redirect("/login")
 
 # ---------- SIGNUP ----------
 @app.route("/signup", methods=["GET", "POST"])
@@ -60,8 +57,6 @@ def signup():
         password = request.form["password"]
 
         existing_user = User.query.filter_by(username=username).first()
-
-        # 👉 TEMP UI-friendly (no blocking)
         if existing_user:
             return redirect("/login")
 
@@ -85,8 +80,6 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        print("FORM DATA:", request.form)  # keep for debug
-
         if not username or not password:
             return redirect("/login")
 
@@ -99,32 +92,35 @@ def login():
         return redirect("/login")
 
     return render_template("login.html")
+
 # ---------- DASHBOARD ----------
-@app.route("/dashboard")
+@app.route('/dashboard')
 @login_required
 def dashboard():
-    response = s3.list_objects_v2(Bucket=bucket_name)
+    user_prefix = f"{current_user.id}/"
+
+    response = s3.list_objects_v2(
+        Bucket=bucket_name,
+        Prefix=user_prefix
+    )
 
     files = []
 
-    total_size = 0
-
     if 'Contents' in response:
         for obj in response['Contents']:
-            total_size += obj['Size']
+            key = obj['Key']
 
-    used_mb = round(total_size / (1024 * 1024), 2)
+            if key.endswith('/'):
+                continue
 
-    # assume max 1GB
-    usage_percent = int((used_mb / 1024) * 100) if used_mb else 1
+            files.append({
+                "name": key.split('/')[-1],
+                "key": key,
+                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}"
+            })
 
-    return render_template(
-        "dashboard.html",
-        files=files,
-        active="dashboard",
-        used_mb=used_mb,    
-        usage_percent=usage_percent
-    )
+    return render_template("dashboard.html", files=files)
+
 # ---------- UPLOAD ----------
 @app.route("/upload", methods=["POST"])
 @login_required
@@ -137,17 +133,17 @@ def upload():
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
 
-        s3_key = f"user_uploads/{current_user.id}/{filename}"
+        s3_key = f"{current_user.id}/{filename}"
 
         s3.upload_fileobj(
-    file,
-    bucket_name,
-    file.filename,
-    ExtraArgs={
-        "ContentType": file.content_type,
-        "ContentDisposition": "inline"
-    }
-)
+            file,
+            bucket_name,
+            s3_key,
+            ExtraArgs={
+                "ContentType": file.content_type,
+                "ContentDisposition": "inline"
+            }
+        )
 
         return redirect("/dashboard")
 
@@ -159,7 +155,6 @@ def upload():
 def delete():
     key = request.form.get("key")
 
-    # move to trash instead of deleting
     s3.copy_object(
         Bucket=bucket_name,
         CopySource={'Bucket': bucket_name, 'Key': key},
@@ -170,6 +165,7 @@ def delete():
 
     return redirect("/dashboard")
 
+# ---------- PREVIEW ----------
 @app.route('/preview/<path:file_key>')
 @login_required
 def preview_file(file_key):
@@ -177,7 +173,7 @@ def preview_file(file_key):
         url = s3.generate_presigned_url(
             'get_object',
             Params={
-                'Bucket': 'YOUR_BUCKET_NAME',
+                'Bucket': bucket_name,
                 'Key': file_key
             },
             ExpiresIn=300
@@ -191,30 +187,13 @@ def preview_file(file_key):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ---------- FILES (REUSE DASHBOARD) ----------
+# ---------- FILES ----------
 @app.route("/files")
 @login_required
 def files():
-    response = s3.list_objects_v2(Bucket=bucket_name)
+    return redirect("/dashboard")
 
-    files = []
-
-    if 'Contents' in response:
-        for obj in response['Contents']:
-            key = obj['Key']
-
-            if key.endswith("/"):
-                continue
-
-            files.append({
-                "name": key.split("/")[-1],
-                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
-                "key": key
-            })
-
-    return render_template("files.html", files=files, active="files")
-
-# ---------- RECENT (REUSE DASHBOARD) ----------
+# ---------- RECENT ----------
 @app.route("/recent")
 @login_required
 def recent():
@@ -223,10 +202,9 @@ def recent():
     files = []
 
     if 'Contents' in response:
-        # sort by latest
         sorted_files = sorted(response['Contents'], key=lambda x: x['LastModified'], reverse=True)
 
-        for obj in sorted_files[:5]:  # last 5 files
+        for obj in sorted_files[:5]:
             key = obj['Key']
 
             if key.endswith("/"):
@@ -234,13 +212,13 @@ def recent():
 
             files.append({
                 "name": key.split("/")[-1],
-                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
-                "key": key
+                "key": key,
+                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}"
             })
 
-    return render_template("files.html", files=files, active="recent")
+    return render_template("dashboard.html", files=files)
 
-# ---------- TRASH (REUSE DASHBOARD) ----------
+# ---------- TRASH ----------
 @app.route("/trash")
 @login_required
 def trash():
@@ -257,36 +235,23 @@ def trash():
 
             files.append({
                 "name": key.split("/")[-1],
-                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
-                "key": key
+                "key": key,
+                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}"
             })
 
-    return render_template("files.html", files=files, active="trash")
+    return render_template("dashboard.html", files=files)
 
-# ---------- LOGOUT (FIXED) ----------
+# ---------- LOGOUT ----------
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect("/login")
 
-@app.route("/files")
-@login_required
-def all_files():
-    return redirect("/dashboard")  # for now reuse dashboard
-
-@app.route("/profile")
-@login_required
-def profile():
-    return {
-        "username": current_user.username,
-        "id": current_user.id
-    }
-
-# ---------- ERROR HANDLER ----------
+# ---------- ERROR ----------
 @app.errorhandler(413)
 def too_large(e):
-    return "File is too large (Max 10MB)", 413
+    return "File too large (Max 10MB)", 413
 
 # ================= RUN =================
 
