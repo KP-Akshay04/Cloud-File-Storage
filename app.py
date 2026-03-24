@@ -76,11 +76,13 @@ def signup():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        print(request.form)  # 👈 DEBUG LINE
+
         username = request.form.get("username")
         password = request.form.get("password")
 
         if not username or not password:
-            return redirect("/login")
+            return "Form data missing", 400
 
         user = User.query.filter_by(username=username).first()
 
@@ -91,7 +93,6 @@ def login():
         return redirect("/login")
 
     return render_template("login.html")
-
 # ---------- DASHBOARD ----------
 @app.route("/dashboard")
 @login_required
