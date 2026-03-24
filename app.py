@@ -56,10 +56,11 @@ def signup():
         username = request.form["username"]
         password = request.form["password"]
 
-        # 🔥 check if user already exists
         existing_user = User.query.filter_by(username=username).first()
+
+        # 👉 TEMP UI-friendly (no blocking)
         if existing_user:
-            return "User already exists"
+            return redirect("/login")
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
@@ -67,23 +68,29 @@ def signup():
         db.session.add(user)
         db.session.commit()
 
-        return redirect(url_for("home"))
+        return redirect("/login")
 
     return render_template("signup.html")
 
 # ---------- LOGIN ----------
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    username = request.form["username"]
-    password = request.form["password"]
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
 
-    user = User.query.filter_by(username=username).first()
+        if not username or not password:
+            return redirect("/login")
 
-    if user and bcrypt.check_password_hash(user.password, password):
-        login_user(user)
-        return redirect("/dashboard")
+        user = User.query.filter_by(username=username).first()
 
-    return "Invalid credentials"
+        if user and bcrypt.check_password_hash(user.password, password):
+            login_user(user)
+            return redirect("/dashboard")
+
+        return redirect("/login")
+
+    return render_template("login.html")
 
 # ---------- DASHBOARD ----------
 @app.route("/dashboard")
