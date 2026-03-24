@@ -75,14 +75,17 @@ def signup():
 # ---------- LOGIN ----------
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
-        print(request.form)   # 👈 PASTE HERE
+    if current_user.is_authenticated:
+        return redirect("/dashboard")
 
+    if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
 
+        print("FORM DATA:", request.form)  # keep for debug
+
         if not username or not password:
-            return "Form data missing", 400
+            return redirect("/login")
 
         user = User.query.filter_by(username=username).first()
 
@@ -97,38 +100,22 @@ def login():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    response = s3.list_objects_v2(Bucket=bucket_name)
+
     files = []
-
-    search_query = request.args.get('search', '').lower()
-
-    response = s3.list_objects_v2(
-        Bucket=bucket_name,
-        Prefix=f"user_uploads/{current_user.id}/"
-    )
 
     if 'Contents' in response:
         for obj in response['Contents']:
             key = obj['Key']
+            file_url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
 
-            if key.endswith('/'):
-                continue
+            files.append({
+                "name": key.split("/")[-1],
+                "url": file_url,
+                "key": key
+            })
 
-            filename = key.split('/')[-1]
-
-            url = s3.generate_presigned_url(
-                'get_object',
-                Params={'Bucket': bucket_name, 'Key': key},
-                ExpiresIn=3600
-            )
-
-            if search_query in filename.lower():
-                files.append({
-                    "url": url,
-                    "key": key,
-                    "name": filename
-                })
-
-    return render_template("dashboard.html", files=files)
+    return render_template("dashboard.html", files=files, active="dashboard")
 
 # ---------- UPLOAD ----------
 @app.route("/upload", methods=["POST"])
@@ -169,12 +156,33 @@ def delete():
 
     return redirect('/dashboard')
 
+# ---------- FILES (REUSE DASHBOARD) ----------
+@app.route("/files")
+@login_required
+def files():
+    response = s3.list_objects_v2(Bucket=bucket_name)
+
+    files = []
+
+    if 'Contents' in response:
+        for obj in response['Contents']:
+            key = obj['Key']
+            file_url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
+
+            files.append({
+                "name": key.split("/")[-1],
+                "url": file_url,
+                "key": key
+            })
+
+    return render_template("files.html", files=files, active="files")
+
 # ---------- LOGOUT (FIXED) ----------
 @app.route("/logout")
 @login_required
 def logout():
-    logout_user()   # 🔥 this is enough
-    return redirect("/")
+    logout_user()
+    return redirect("/login")
 
 @app.route("/files")
 @login_required

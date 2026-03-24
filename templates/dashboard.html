@@ -9,35 +9,82 @@
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white min-h-screen flex">
 
 <!-- 🔹 Sidebar -->
-<div id="sidebar" class="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between">
+<div id="sidebar"
+class="w-64 bg-white/5 backdrop-blur-xl border-r border-white/10 p-6
+transform transition-transform duration-300 ease-in-out">
 
-    <div>
-        <h2 class="text-2xl font-bold mb-10">☁ MyCloud</h2>
+     <div id="overlay"
+     class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"
+     onclick="toggleSidebar()">
+</div>
 
-        <ul class="space-y-4">
-            <li>
-                <a href="/dashboard" class="block px-4 py-2 rounded-xl bg-blue-500/20 text-blue-400 font-semibold">
-                    Dashboard
-                </a>
-            </li>
-            <li>
-                <a href="/files" class="block px-4 py-2 rounded-xl hover:bg-white/10 transition">
-                    Files
-                </a>
-            </li>
-            <li>
-                <a href="#upload" class="block px-4 py-2 rounded-xl hover:bg-white/10 transition">
-                    Upload
-                </a>
-            </li>
-        </ul>
+<div class="mt-10">
+    <p class="text-sm text-gray-400">Storage</p>
+
+    <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+        <div class="bg-blue-500 h-2 rounded-full" style="width: 45%"></div>
     </div>
 
-    <a href="/logout" class="text-red-400 hover:text-red-500">Logout</a>
+    <p class="text-xs mt-2 text-gray-400">450 MB of 1 GB used</p>
+</div>
+
+    <h2 class="text-2xl font-bold mb-10">☁ MyCloud</h2>
+
+    <ul class="space-y-4">
+
+        <!-- Dashboard -->
+        <li>
+            <a href="/dashboard"
+   class="block px-4 py-2 rounded-xl hover:bg-white/10
+   {% if active == 'dashboard' %}bg-blue-500/20 text-blue-400 font-semibold{% endif %}">
+   🏠 Dashboard
+</a>
+        </li>
+
+        <!-- My Files -->
+        <li>
+            <a href="/files"
+   class="block px-4 py-2 rounded-xl hover:bg-white/10
+   {% if active == 'files' %}bg-blue-500/20 text-blue-400 font-semibold{% endif %}">
+   📁 My Files
+</a>
+        </li>
+
+        <!-- Recent -->
+        <li>
+            <a href="/recent"
+               class="block px-4 py-2 rounded-xl hover:bg-white/10 
+               {% if active == 'recent' %}bg-blue-500/20 text-blue-400 font-semibold{% endif %}">
+                🕒 Recent
+            </a>
+        </li>
+
+        <!-- Trash -->
+        <li>
+            <a href="/trash"
+               class="block px-4 py-2 rounded-xl hover:bg-white/10 
+               {% if active == 'trash' %}bg-blue-500/20 text-blue-400 font-semibold{% endif %}">
+                🗑 Trash
+            </a>
+        </li>
+
+    </ul>
+
+    <!-- Storage -->
+    <div class="mt-10">
+        <p class="text-sm text-gray-400">Storage</p>
+
+        <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+            <div class="bg-blue-500 h-2 rounded-full" style="width: 30%"></div>
+        </div>
+
+        <p class="text-xs mt-2 text-gray-400">300 MB of 1 GB used</p>
+    </div>
+
 </div>
 
 <!-- 🔹 Main -->
-<div class="flex-1 p-8">
+<div class="flex-1 p-8 ml-64">
 
     <!-- 🔝 Topbar -->
     <div class="flex justify-between items-center mb-8">
@@ -137,9 +184,17 @@
 function toggleMenu() {
     document.getElementById("menu").classList.toggle("hidden");
 }
-
 function toggleSidebar() {
-    document.getElementById("sidebar").classList.toggle("hidden");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("overlay");
+
+    sidebar.classList.toggle("-translate-x-full");
+    overlay.classList.toggle("hidden");
+}
+</script>
+<script>
+function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("-translate-x-full");
 }
 </script>
 
