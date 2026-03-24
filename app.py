@@ -1,3 +1,5 @@
+from importlib.resources import files
+
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -104,14 +106,17 @@ def dashboard():
         Prefix=user_prefix
     )
 
+    total_size = 0
     files = []
 
     if 'Contents' in response:
         for obj in response['Contents']:
             key = obj['Key']
 
-            if key.endswith('/'):
+            if key.endswith("/") or key.startswith("trash/"):
                 continue
+
+            total_size += obj['Size']
 
             files.append({
                 "name": key.split('/')[-1],
@@ -119,7 +124,15 @@ def dashboard():
                 "url": f"https://{bucket_name}.s3.amazonaws.com/{key}"
             })
 
-    return render_template("dashboard.html", files=files)
+    used_mb = round(total_size / (1024 * 1024), 2)
+    usage_percent = min((used_mb / 100) * 100, 100)  # assuming 100MB limit
+
+    return render_template(
+        "dashboard.html",
+        files=files,
+        used_mb=used_mb,
+        usage_percent=usage_percent
+    )
 
 # ---------- UPLOAD ----------
 @app.route("/upload", methods=["POST"])
@@ -155,16 +168,17 @@ def upload():
 def delete():
     key = request.form.get("key")
 
+    new_key = f"trash/{current_user.id}/{key.split('/')[-1]}"
+
     s3.copy_object(
         Bucket=bucket_name,
         CopySource={'Bucket': bucket_name, 'Key': key},
-        Key=f"trash/{key}"
+        Key=new_key
     )
 
     s3.delete_object(Bucket=bucket_name, Key=key)
 
     return redirect("/dashboard")
-
 # ---------- PREVIEW ----------
 @app.route('/preview/<path:file_key>')
 @login_required
@@ -191,23 +205,20 @@ def preview_file(file_key):
 @app.route("/files")
 @login_required
 def files():
-    return redirect("/dashboard")
+    user_prefix = f"{current_user.id}/"
 
-# ---------- RECENT ----------
-@app.route("/recent")
-@login_required
-def recent():
-    response = s3.list_objects_v2(Bucket=bucket_name)
+    response = s3.list_objects_v2(
+        Bucket=bucket_name,
+        Prefix=user_prefix
+    )
 
     files = []
 
     if 'Contents' in response:
-        sorted_files = sorted(response['Contents'], key=lambda x: x['LastModified'], reverse=True)
-
-        for obj in sorted_files[:5]:
+        for obj in response['Contents']:
             key = obj['Key']
 
-            if key.endswith("/"):
+            if key.endswith("/") or key.startswith("trash/"):
                 continue
 
             files.append({
@@ -216,13 +227,52 @@ def recent():
                 "url": f"https://{bucket_name}.s3.amazonaws.com/{key}"
             })
 
-    return render_template("dashboard.html", files=files)
+    return render_template("dashboard.html", files=files, active="files")
+
+# ---------- RECENT ----------
+@app.route("/recent")
+@login_required
+def recent():
+    user_prefix = f"{current_user.id}/"
+
+    response = s3.list_objects_v2(
+        Bucket=bucket_name,
+        Prefix=user_prefix
+    )
+
+    files = []
+
+    if 'Contents' in response:
+        sorted_files = sorted(
+            response['Contents'],
+            key=lambda x: x['LastModified'],
+            reverse=True
+        )
+
+        for obj in sorted_files[:5]:
+            key = obj['Key']
+
+            if key.endswith("/") or key.startswith("trash/"):
+                continue
+
+            files.append({
+                "name": key.split("/")[-1],
+                "key": key,
+                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}"
+            })
+
+    return render_template("dashboard.html", files=files, active="recent")
 
 # ---------- TRASH ----------
 @app.route("/trash")
 @login_required
 def trash():
-    response = s3.list_objects_v2(Bucket=bucket_name, Prefix="trash/")
+    trash_prefix = f"trash/{current_user.id}/"
+
+    response = s3.list_objects_v2(
+        Bucket=bucket_name,
+        Prefix=trash_prefix
+    )
 
     files = []
 
@@ -239,7 +289,7 @@ def trash():
                 "url": f"https://{bucket_name}.s3.amazonaws.com/{key}"
             })
 
-    return render_template("dashboard.html", files=files)
+    return render_template("dashboard.html", files=files, active="trash")
 
 # ---------- LOGOUT ----------
 @app.route("/logout")

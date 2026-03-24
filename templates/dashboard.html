@@ -4,46 +4,6 @@
 <meta charset="UTF-8">
 <title>Dashboard | MyCloud</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
-<!-- ✅ MODAL CSS ADDED -->
-<style>
-.preview-modal {
-  display: none;
-  position: fixed;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(8px);
-}
-
-.preview-content {
-  position: relative;
-  margin: 3% auto;
-  width: 85%;
-  height: 85%;
-  background: rgba(255,255,255,0.05);
-  border-radius: 20px;
-  padding: 20px;
-}
-
-.close-btn {
-  position: absolute;
-  right: 20px;
-  top: 10px;
-  font-size: 30px;
-  cursor: pointer;
-  color: white;
-}
-
-#previewBody {
-  width: 100%;
-  height: 100%;
-}
-</style>
-
 </head>
 
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white min-h-screen flex">
@@ -149,60 +109,8 @@ class="w-64 fixed h-full bg-white/5 backdrop-blur-xl border-r border-white/10 p-
 
 </div>
 
-<!-- ✅ PREVIEW MODAL -->
-<div id="previewModal" class="preview-modal">
-  <div class="preview-content">
-    <span class="close-btn" onclick="closePreview()">×</span>
-    <div id="previewBody"></div>
-  </div>
-</div>
 
 <!-- JS -->
-<script>
-function openPreview(fileKey) {
-    const body = document.getElementById("previewBody");
-    const modal = document.getElementById("previewModal");
-
-    body.innerHTML = `<p style="color:white;">Loading preview...</p>`;
-
-    fetch(`/preview/${encodeURIComponent(fileKey)}`)
-    .then(res => res.json())
-    .then(data => {
-        body.innerHTML = "";
-
-        const ext = data.type;
-        const url = data.url;
-
-        if (["jpg","jpeg","png","webp"].includes(ext)) {
-            body.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:contain;">`;
-        }
-        else if (ext === "pdf") {
-            body.innerHTML = `<iframe src="${url}" width="100%" height="100%"></iframe>`;
-        }
-        else if (["txt","json","log"].includes(ext)) {
-            fetch(url)
-            .then(res => res.text())
-            .then(text => {
-                body.innerHTML = `<pre style="color:white;">${text}</pre>`;
-            });
-        }
-        else {
-            body.innerHTML = `<p style="color:white;">Preview not supported</p>`;
-        }
-
-        modal.style.display = "block";
-    });
-}
-
-function closePreview() {
-    document.getElementById("previewModal").style.display = "none";
-}
-
-window.onclick = function(e) {
-    const modal = document.getElementById("previewModal");
-    if (e.target === modal) modal.style.display = "none";
-}
-
 function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("-translate-x-full");
 }
