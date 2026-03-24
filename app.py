@@ -76,7 +76,7 @@ def signup():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        print(request.form)  # 👈 DEBUG LINE
+        print(request.form)   # 👈 PASTE HERE
 
         username = request.form.get("username")
         password = request.form.get("password")
