@@ -49,6 +49,8 @@ def load_user(user_id):
 
 @app.route("/")
 def home():
+    if current_user.is_authenticated:
+        return redirect("/dashboard")
     return redirect("/login")
 
 # ---------- SIGNUP ----------
