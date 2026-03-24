@@ -53,12 +53,13 @@ transform transition-transform duration-300 ease-in-out z-50">
 
     <!-- ✅ STORAGE (ONLY ONE, CONNECTED TO BACKEND) -->
     <div class="mt-10">
-        <p class="text-sm text-gray-400">Storage</p>
-
+       <p class="text-xs mt-2 text-gray-400">
+    {{ used_mb }} MB used
+</p>
         <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
             <div class="bg-blue-500 h-2 rounded-full"
-                 style="width: {{ (used_mb / 1024) * 100 if used_mb else 10 }}%"></div>
-        </div>
+     style="width: {{ usage_percent }}%">
+</div>
 
         <p class="text-xs mt-2 text-gray-400">
             {{ used_mb }} MB used

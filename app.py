@@ -104,18 +104,24 @@ def dashboard():
 
     files = []
 
+    total_size = 0
+
     if 'Contents' in response:
         for obj in response['Contents']:
-            key = obj['Key']
-            file_url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
+            total_size += obj['Size']
 
-            files.append({
-                "name": key.split("/")[-1],
-                "url": file_url,
-                "key": key
-            })
+    used_mb = round(total_size / (1024 * 1024), 2)
 
-    return render_template("dashboard.html", files=files, active="dashboard")
+    # assume max = 1GB (1024 MB)
+    usage_percent = int((used_mb / 1024) * 100) if used_mb else 10
+
+    return render_template(
+        "dashboard.html",
+        files=files,
+        active="dashboard",
+        used_mb=used_mb,
+        usage_percent=usage_percent
+    )
 
 # ---------- UPLOAD ----------
 @app.route("/upload", methods=["POST"])
@@ -163,19 +169,28 @@ def files():
     response = s3.list_objects_v2(Bucket=bucket_name)
 
     files = []
-
     if 'Contents' in response:
         for obj in response['Contents']:
             key = obj['Key']
-            file_url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
-
             files.append({
-                "name": key.split("/")[-1],
-                "url": file_url,
+                "name": key,
+                "url": f"https://{bucket_name}.s3.amazonaws.com/{key}",
                 "key": key
             })
 
     return render_template("files.html", files=files, active="files")
+
+# ---------- RECENT (REUSE DASHBOARD) ----------
+@app.route("/recent")
+@login_required
+def recent():
+    return render_template("files.html", files=[], active="recent")
+
+# ---------- TRASH (REUSE DASHBOARD) ----------
+@app.route("/trash")
+@login_required
+def trash():
+    return render_template("files.html", files=[], active="trash")
 
 # ---------- LOGOUT (FIXED) ----------
 @app.route("/logout")
