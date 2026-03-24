@@ -148,8 +148,10 @@ def upload():
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
 
+        # ✅ THIS IS THE IMPORTANT LINE
         s3_key = f"{current_user.id}/{filename}"
 
+        # ✅ UPLOAD TO S3
         s3.upload_fileobj(
             file,
             bucket_name,
